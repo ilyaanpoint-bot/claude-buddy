@@ -64,6 +64,9 @@ start after installing will talk to buddy.
 back to the corner and waves. If he ends up off-screen (say, you unplug a display), he comes back
 by himself.
 
+To update to the latest version: `./update.sh` from the same folder. It pulls the newest code
+from GitHub and reinstalls; your XP and unlocks are kept.
+
 To remove it: `./uninstall.sh` (your XP and unlocks are kept).
 
 ## How it works
