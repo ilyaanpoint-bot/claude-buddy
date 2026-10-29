@@ -1,0 +1,5 @@
+ClaudeBuddy
+*.bak
+events.jsonl
+save.json
+.DS_Store
