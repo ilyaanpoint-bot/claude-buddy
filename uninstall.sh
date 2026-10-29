@@ -5,6 +5,7 @@ SETTINGS="$HOME/.claude/settings.json"
 PLIST="$HOME/Library/LaunchAgents/com.claude-buddy.plist"
 
 pkill -x ClaudeBuddy 2>/dev/null
+[ -d "$HOME/Applications/Claude Buddy.app" ] && rm -rf "$HOME/Applications/Claude Buddy.app"
 if [ -f "$PLIST" ]; then
   launchctl bootout "gui/$(id -u)" "$PLIST" 2>/dev/null
   mv "$PLIST" "$HOME/.claude/claude-buddy/com.claude-buddy.plist.disabled"

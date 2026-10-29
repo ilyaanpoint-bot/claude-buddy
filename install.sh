@@ -2,8 +2,10 @@
 # Installs Claude Buddy: builds the app, installs the hook script into ~/.claude/claude-buddy,
 # and adds the Claude Code hooks to ~/.claude/settings.json (a backup is made first).
 #
-#   ./install.sh            install and start buddy
+#   ./install.sh            install "Claude Buddy" into ~/Applications and start it
 #   ./install.sh --login    also start buddy automatically when you log in
+#
+# Lost buddy, or quit him? Open "Claude Buddy" from Launchpad or Spotlight and he comes back.
 set -e
 cd "$(dirname "$0")"
 
@@ -15,11 +17,17 @@ if ! command -v swiftc >/dev/null 2>&1; then
   exit 1
 fi
 
+APPS="$HOME/Applications"
+APP="$APPS/Claude Buddy.app"
+
 echo "→ Building Claude Buddy…"
-mkdir -p "$DEST"
-swiftc -O -swift-version 5 src/*.swift -o "$DEST/ClaudeBuddy"
+./build.sh >/dev/null
+pkill -x ClaudeBuddy 2>/dev/null || true
+mkdir -p "$DEST" "$APPS"
+rm -rf "$APP"
+cp -R "build/Claude Buddy.app" "$APP"
 cp hook.sh "$DEST/hook.sh"
-chmod +x "$DEST/hook.sh" "$DEST/ClaudeBuddy"
+chmod +x "$DEST/hook.sh"
 
 echo "→ Adding Claude Code hooks to $SETTINGS…"
 mkdir -p "$HOME/.claude"
@@ -49,7 +57,7 @@ if [ "$1" = "--login" ]; then
 <plist version="1.0">
 <dict>
   <key>Label</key><string>com.claude-buddy</string>
-  <key>ProgramArguments</key><array><string>$DEST/ClaudeBuddy</string></array>
+  <key>ProgramArguments</key><array><string>$APP/Contents/MacOS/ClaudeBuddy</string></array>
   <key>RunAtLoad</key><true/>
   <key>KeepAlive</key><dict><key>SuccessfulExit</key><false/></dict>
 </dict>
@@ -58,9 +66,9 @@ EOF
   launchctl bootout "gui/$(id -u)" "$PLIST" 2>/dev/null || true
   launchctl bootstrap "gui/$(id -u)" "$PLIST"
 else
-  pkill -x ClaudeBuddy 2>/dev/null || true
-  nohup "$DEST/ClaudeBuddy" >/dev/null 2>&1 &
+  open "$APP"
 fi
 
 echo "✓ Claude Buddy is in the bottom-right corner of your screen."
+echo "  Lost him or quit him? Open \"Claude Buddy\" from Launchpad or Spotlight and he comes right back."
 echo "  New Claude Code sessions will talk to it. Double-click buddy to visit its room."

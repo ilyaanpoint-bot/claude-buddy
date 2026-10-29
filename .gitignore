@@ -1,4 +1,5 @@
 ClaudeBuddy
+build/
 *.bak
 events.jsonl
 save.json

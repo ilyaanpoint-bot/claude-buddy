@@ -27,6 +27,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let originKey = "origin2"
     var progress: BuddyProgress { BuddyProgress.shared }
 
+    /// Opening the app again (Launchpad, Spotlight, Dock, Finder) brings buddy back to the corner.
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        comeBack()
+        return false
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         try? FileManager.default.createDirectory(at: buddyDir, withIntermediateDirectories: true)
         if !FileManager.default.fileExists(atPath: eventsURL.path) {
@@ -102,6 +108,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         updateMoods()
         funTick()
+        // If buddy ended up somewhere you can't see (e.g. a display was unplugged), bring him back.
+        let spot = NSRect(x: panel.frame.maxX - 90, y: panel.frame.minY + 10, width: 80, height: 80)
+        if Fun.shared.flyVel == nil && !NSScreen.screens.contains(where: { $0.visibleFrame.intersects(spot) }) { comeBack() }
 
         // Buddies doze off when nothing has happened for a while (sooner late at night).
         let lateNight = Calendar.current.component(.hour, from: date) < 6

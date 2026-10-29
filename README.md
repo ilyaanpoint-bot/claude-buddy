@@ -8,6 +8,7 @@ unlockables, mini-games, secrets and quite a temper.
 ![Buddy's moods](docs/moods.png)
 
 > Unofficial fan project. Not affiliated with or endorsed by Anthropic. "Claude" is a trademark of Anthropic.
+> On Windows? → [claude-buddy-windows](https://github.com/ilyaanpoint-bot/claude-buddy-windows)
 
 ## Features
 
@@ -51,13 +52,17 @@ cd claude-buddy
 
 The installer:
 
-1. builds the app into `~/.claude/claude-buddy/`
-2. installs `hook.sh` there
+1. builds **Claude Buddy.app** into `~/Applications`, so it's in Launchpad and Spotlight
+2. installs `hook.sh` into `~/.claude/claude-buddy/`
 3. adds five hooks to `~/.claude/settings.json`: `UserPromptSubmit`, `PostToolUse`, `Stop`,
    `Notification`, `SessionEnd`
 
 It backs up your settings first and never removes your existing hooks. Claude Code sessions you
 start after installing will talk to buddy.
+
+**Lost buddy, or quit him?** Open **Claude Buddy** from Launchpad or Spotlight and he comes straight
+back to the corner and waves. If he ends up off-screen (say, you unplug a display), he comes back
+by himself.
 
 To remove it: `./uninstall.sh` (your XP and unlocks are kept).
 
@@ -87,7 +92,7 @@ to a local file. Nothing leaves your Mac.
 ## Develop
 
 ```sh
-./build.sh && ./ClaudeBuddy
+./build.sh && open "build/Claude Buddy.app"
 ```
 
 Everything is plain AppKit drawn by hand, with no assets or dependencies. The source files:

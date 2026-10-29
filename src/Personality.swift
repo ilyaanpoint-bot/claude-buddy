@@ -56,6 +56,17 @@ extension AppDelegate {
         }
     }
 
+    /// Puts buddy back in the corner and says hi (used when the app is reopened or he's lost).
+    func comeBack() {
+        Fun.shared.flyVel = nil
+        buddy.flying = false
+        resetPosition()
+        wake(0)
+        buddy.startIdle(.wave)
+        Synth.shared.chirp()
+        corner.say(0, title: ["here I am! 👋", "you called? 😊", "I'm right here!"].randomElement()!, duration: 4)
+    }
+
     // MARK: Temper
 
     func annoy(_ amount: Double, quiet: Bool = false) {
