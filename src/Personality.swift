@@ -102,8 +102,7 @@ extension AppDelegate {
             self.corner.say(0, title: "MWAHAHAHA 😈", sub: "click the bombs to defuse them!", duration: 3, voice: false)
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { Synth.shared.devilLaugh() }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) {
-                let home = NSPoint(x: self.panel.frame.maxX - 46, y: self.panel.frame.minY + 44)
-                f.rage.start(from: home)
+                f.rage.start(from: self.buddyHome())
             }
         }
     }
@@ -224,7 +223,7 @@ extension AppDelegate {
         guard !Fun.shared.raging else { return }
         let f = Fun.shared
         f.flyVel = CGVector(dx: max(-3500, min(3500, v.dx)), dy: max(-3500, min(3500, v.dy)))
-        f.flyPos = NSPoint(x: panel.frame.maxX - 46, y: panel.frame.minY + 44)
+        f.flyPos = buddyHome()
         buddy.flying = true
         wake(0)
         Synth.shared.whee()
@@ -258,7 +257,7 @@ extension AppDelegate {
             v.dx *= 0.82
         }
         f.flyPos = p
-        panel.setFrameOrigin(NSPoint(x: p.x - (panel.frame.width - 46), y: p.y - 44))
+        panel.setFrameOrigin(NSPoint(x: p.x - (panel.frame.width - 46 * scale), y: p.y - 44 * scale))
         if p.y <= minY && v.dy == 0 && abs(v.dx) < 30 {
             f.flyVel = nil
             buddy.flying = false
@@ -289,8 +288,8 @@ extension AppDelegate {
 
         // Tickle (wiggling the cursor over him) and staring (hovering very still)
         let m = NSEvent.mouseLocation
-        let home = NSPoint(x: panel.frame.maxX - 46, y: panel.frame.minY + 44)
-        let inside = hypot(m.x - home.x, m.y - home.y) < 34 && f.flyVel == nil
+        let home = buddyHome()
+        let inside = hypot(m.x - home.x, m.y - home.y) < 34 * scale && f.flyVel == nil && hiddenUntil == nil
         let moved = hypot(m.x - f.lastMouse.x, m.y - f.lastMouse.y)
         f.lastMouse = m
         if inside { f.tickleAccum += moved }
@@ -304,7 +303,7 @@ extension AppDelegate {
                 Synth.shared.giggle()
                 if f.tickleTime > 3.5 {
                     annoy(6, quiet: true)
-                    if Int.random(in: 0..<3) == 0 { corner.say(0, title: ["okay okay STOP 😂", "hahaha no— stop!!", "I can't breathe 🤣"].randomElement()!, duration: 1.5) }
+                    if Prefs.thoughts && !Prefs.quiet && Int.random(in: 0..<3) == 0 { corner.say(0, title: ["okay okay STOP 😂", "hahaha no— stop!!", "I can't breathe 🤣"].randomElement()!, duration: 1.5) }
                 }
             }
             progress.achieve("tickle")
@@ -366,11 +365,6 @@ extension AppDelegate {
             return [["RUDE. 😤", "excuse me?!", "I'm telling Claude.", "wow. okay. noted. 📝"].randomElement()!]
         }
         switch cmd {
-        case "help", "?":
-            return ["commands: help feed pet dance sleep wake stats wear <item>",
-                    "  honk joke fortune sorry meds mood juggle whistle",
-                    "  read sneeze yawn coffee wave flip copycat ls clear exit",
-                    "(and a few secrets… 👀)"]
         case "sorry", "i'm sorry", "im sorry", "apologize":
             calm(45); buddy.love()
             return ["…okay. I forgive you 🥺"]
@@ -395,7 +389,7 @@ extension AppDelegate {
             if cmd == "whistle" { Synth.shared.whistle() }
             if cmd == "sneeze" { DispatchQueue.main.asyncAfter(deadline: .now() + 1.1) { Synth.shared.sneeze() } }
             return ["*\(cmd)s*"]
-        case "copycat": roomView?.startCopycat(); return ["🎵 let's play!"]
+        case "copycat": roomView?.startGame("copycat"); return ["🎵 let's play!"]
         default: return nil
         }
     }
@@ -406,19 +400,13 @@ extension AppDelegate {
         let mood = buddy.sick ? "Mood: sick 🤢" : a > 70 ? "Mood: FURIOUS 😡" : a > 35 ? "Mood: annoyed 😠" : "Mood: happy 😊"
         menu.addItem(withTitle: mood, action: nil, keyEquivalent: "").isEnabled = false
         for (title, sel) in [("Honk at buddy 📯", #selector(honkMenu)), ("Tease with a cookie 😈", #selector(teaseMenu)),
-                             ("Give medicine 💊", #selector(medicineMenu)), ("Play Copycat 🎵", #selector(copycatMenu))] {
+                             ("Give medicine 💊", #selector(medicineMenu))] {
             menu.addItem(withTitle: title, action: sel, keyEquivalent: "").target = self
         }
-        let test = menu.addItem(withTitle: "Test: tantrum 😈", action: #selector(rageMenu), keyEquivalent: "")
-        test.target = self
     }
 
     @objc func honkMenu() { honk() }
     @objc func teaseMenu() { teaseCookie() }
     @objc func medicineMenu() { giveMedicine() }
     @objc func rageMenu() { rage() }
-    @objc func copycatMenu() {
-        openRoom()
-        roomView?.startCopycat()
-    }
 }

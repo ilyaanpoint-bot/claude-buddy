@@ -33,6 +33,7 @@ final class CornerView: NSView {
     private(set) var holdStart = 0.0
     private var dragSamples: [(Double, NSPoint)] = []
     var menuProvider: (() -> NSMenu?)?
+    var focusProvider: (() -> (String, CGFloat)?)?
 
     private var pressed: (index: Int, bubble: Bool)?
     private var dragOffset: NSPoint?
@@ -55,8 +56,9 @@ final class CornerView: NSView {
     private func home(_ i: Int) -> NSPoint { NSPoint(x: bounds.maxX - slots[i].inset, y: 44) }
     private func bubbleVisible(_ i: Int) -> Bool { slots[i].present && now() - slots[i].bubbleAt < slots[i].bubbleDuration }
 
-    func skin(_ i: Int) -> String { i == 0 ? BuddyProgress.shared.data.skin : "sky" }
+    func skin(_ i: Int) -> String { i == 0 ? BuddyProgress.shared.data.skin : BuddyProgress.shared.data.friendSkin }
     func hat(_ i: Int) -> String { i == 0 ? BuddyProgress.shared.data.hat : "none" }
+    func accessory(_ i: Int) -> String { i == 0 ? BuddyProgress.shared.data.accessory : "none-acc" }
 
     func setPresent(_ i: Int, _ present: Bool) {
         let s = slots[i]
@@ -95,6 +97,19 @@ final class CornerView: NSView {
         return NSRect(x: max(4, right - w), y: 100 + (stacked ? 48 : 0), width: w, height: h)
     }
 
+    /// The part of the view that can change this frame: the characters, the focus label and any bubble.
+    func activeRect(focus: Bool) -> NSRect {
+        var r = NSRect.zero
+        for i in slots.indices where slots[i].present || now() - slots[i].presentChangedAt < 0.5 {
+            let h = home(i)
+            var a = NSRect(x: h.x - 62, y: 0, width: 124, height: 140)
+            if i == 0 && focus { a = a.union(NSRect(x: h.x - 170, y: h.y - 44, width: 170, height: 88)) }
+            r = r.union(a)
+            if now() - slots[i].bubbleAt < slots[i].bubbleDuration + 0.5 { r = r.union(bubbleRect(i).insetBy(dx: -14, dy: -16)) }
+        }
+        return r.intersection(bounds)
+    }
+
     /// Which character (or its bubble) is under the point; everything else clicks through.
     func hit(at p: NSPoint) -> (index: Int, bubble: Bool)? {
         for i in slots.indices.reversed() where bubbleVisible(i) && bubbleRect(i).insetBy(dx: -4, dy: -4).contains(p) {
@@ -120,7 +135,8 @@ final class CornerView: NSView {
             let len = max(80, hypot(v.dx, v.dy))
             var pose = s.anim.pose(look: CGVector(dx: v.dx / len, dy: v.dy / len))
             pose.sx *= appear; pose.sy *= appear
-            Renderer.draw(skin: skin(i), hat: hat(i), pose: pose, at: h, scale: 1)
+            if i == 0, let (label, frac) = focusProvider?() { focusRing(at: h, label: label, frac: frac, showLabel: !slots[1].present) }
+            Renderer.draw(skin: skin(i), hat: hat(i), accessory: accessory(i), pose: pose, at: h, scale: 1)
             if s.anim.mood == .working && !s.anim.isCelebrating && !s.anim.asleep { thinkingDots(i) }
             if s.anim.mood == .attention && !s.anim.asleep { attentionMark(i) }
         }
@@ -135,6 +151,24 @@ final class CornerView: NSView {
             return CGFloat(1 + 2.7 * pow(x - 1, 3) + 1.7 * pow(x - 1, 2))
         }
         return CGFloat(max(0, 1 - e / 0.3))
+    }
+
+    private func focusRing(at h: NSPoint, label: String, frac: CGFloat, showLabel: Bool) {
+        let r: CGFloat = 40
+        NSColor(white: 0.5, alpha: 0.25).setStroke()
+        let bg = NSBezierPath(ovalIn: NSRect(x: h.x - r, y: h.y - r, width: 2 * r, height: 2 * r)); bg.lineWidth = 3; bg.stroke()
+        rgb(0xE5395B, 0.9).setStroke()
+        let arc = NSBezierPath(); arc.lineWidth = 3; arc.lineCapStyle = .round
+        arc.appendArc(withCenter: h, radius: r, startAngle: 90, endAngle: 90 - 360 * max(0.001, frac), clockwise: true)
+        arc.stroke()
+        guard showLabel else { return }
+        let s = "🍅 " + label
+        let attrs: [NSAttributedString.Key: Any] = [.font: NSFont.monospacedDigitSystemFont(ofSize: 11, weight: .bold), .foregroundColor: NSColor.white]
+        let w = (s as NSString).size(withAttributes: attrs).width + 14
+        let box = NSRect(x: h.x - r - w - 6, y: h.y - 10, width: w, height: 20)
+        rgb(0x2B2D42, 0.9).setFill()
+        NSBezierPath(roundedRect: box, xRadius: 10, yRadius: 10).fill()
+        (s as NSString).draw(at: NSPoint(x: box.minX + 7, y: box.minY + 3), withAttributes: attrs)
     }
 
     private func thinkingDots(_ i: Int) {

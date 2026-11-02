@@ -32,9 +32,23 @@ final class Synth {
             engine.connect(p, to: engine.mainMixerNode, format: format)
             players.append(p)
         }
-        engine.mainMixerNode.outputVolume = 0.45
-        try? engine.start()
+        engine.mainMixerNode.outputVolume = Prefs.volume
     }
+
+    /// The audio engine costs CPU even when silent, so it only runs while sounds are playing.
+    private var idleStop: DispatchWorkItem?
+    private func scheduleStop(after seconds: Double) {
+        idleStop?.cancel()
+        let w = DispatchWorkItem { [weak self] in
+            guard let self, self.engine.isRunning else { return }
+            self.players.forEach { $0.stop() }
+            self.engine.stop()
+        }
+        idleStop = w
+        DispatchQueue.main.asyncAfter(deadline: .now() + seconds, execute: w)
+    }
+
+    func applyVolume() { engine.mainMixerNode.outputVolume = Prefs.volume }
 
     func play(_ notes: [Note]) {
         guard !muted, !notes.isEmpty else { return }
@@ -70,6 +84,7 @@ final class Synth {
         nextPlayer = (nextPlayer + 1) % players.count
         player.scheduleBuffer(buf, at: nil, options: .interrupts)
         player.play()
+        scheduleStop(after: total + 2)
     }
 
     private func arp(_ freqs: [Double], dur: Double, wave: Wave = .triangle, vol: Double = 0.4, last: Double? = nil) -> [Note] {
@@ -88,6 +103,7 @@ final class Synth {
 
     /// Animal-Crossing-style babble, one blip per few letters.
     func babble(_ text: String, pitch: Double = 1) {
+        guard !Prefs.quiet else { return }
         let n = max(2, min(9, text.count / 3))
         play((0..<n).map { _ in
             let f = 380 * pitch * Double.random(in: 0.85...1.25)
@@ -131,5 +147,10 @@ final class Synth {
     func catchBug(golden: Bool) { play([Note(f0: golden ? 1200 : 800, f1: golden ? 2400 : 1400, dur: 0.07, wave: .square, vol: 0.15)]) }
     func ouch() { play([Note(f0: 300, f1: 120, dur: 0.18, wave: .square, vol: 0.18)]) }
     func gameOver() { play(arp([784, 659, 523, 392], dur: 0.12, last: 0.35)) }
+    func coin() { play([Note(f0: 988, f1: 988, dur: 0.06, wave: .square, vol: 0.14), Note(f0: 1319, f1: 1319, dur: 0.16, wave: .square, vol: 0.14)]) }
+    func whack() { play([Note(f0: 260, f1: 90, dur: 0.08, wave: .noise, vol: 0.35), Note(f0: 520, f1: 900, dur: 0.06, wave: .square, vol: 0.12)]) }
+    func flap() { play([Note(f0: 420, f1: 760, dur: 0.07, wave: .triangle, vol: 0.25)]) }
+    func type() { play([Note(f0: 1800, f1: 1500, dur: 0.02, wave: .square, vol: 0.06)]) }
+    func tick() { play([Note(f0: 1400, f1: 1400, dur: 0.02, wave: .sine, vol: 0.2)]) }
     func meow() { play([Note(f0: 700, f1: 1100, dur: 0.12, wave: .triangle, vol: 0.25), Note(f0: 1100, f1: 600, dur: 0.22, wave: .triangle, vol: 0.25)]) }
 }

@@ -10,6 +10,26 @@ unlockables, mini-games, secrets and quite a temper.
 > Unofficial fan project. Not affiliated with or endorsed by Anthropic. "Claude" is a trademark of Anthropic.
 > On Windows? → [claude-buddy-windows](https://github.com/ilyaanpoint-bot/claude-buddy-windows)
 
+## What's new in 2.0
+
+- **Coins 🪙 and a shop.** Earn coins from finished sessions, games, quests and level-ups. Spend them on
+  furniture, wallpaper, floors, outfits and two new rooms. There's a 30%-off deal every day.
+- **Daily quests and streaks.** Three new quests each day, plus a bonus for coming back day after day.
+- **Room editor (🛠️).** Drag furniture where you want it, put things away, and pick wallpaper and floors.
+- **Arcade with 5 games:** Bug Catch, Copycat, and the new Whack-a-Bug, Buddy Hop and Type Rush.
+- **More looks:** 11 new skins (Panda, Galaxy, Lava, Robot…), 8 new hats, and a new accessory slot
+  (sunglasses, glasses, bow tie, scarf, mustache, monocle…).
+- **New rooms:** Snowy Cabin, Synthwave, Coral Reef. New furniture: disco ball, fairy lights, lava lamp,
+  beanbag, wall clock, cactus, trophy case.
+- **Focus timer 🍅** (right-click buddy → Focus timer). Buddy keeps watch and pays out when you finish.
+- **"All done" shows how long the session took.**
+- **Settings window:** name your buddy, size, volume, quiet mode, the second buddy's skin, launch at login.
+- **Hide for 1 hour** (buddy pops back if Claude needs you).
+- **Fixes:** a memory leak (~50 MB/hour), much lower CPU use when idle, wardrobe items and trophies that
+  were cut off, keys sticking between games, games that kept running after the room closed.
+
+Your XP, unlocks and scores carry over, plus a coin gift for upgrading.
+
 ## Features
 
 - **Knows what Claude Code is doing** (through Claude Code hooks):

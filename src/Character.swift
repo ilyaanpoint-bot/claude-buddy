@@ -280,6 +280,15 @@ enum Renderer {
         case "ghost": return NSColor(white: 1, alpha: 0.55)
         case "devil": return sin(t * 9 + Double(i) * 1.7) > 0.2 ? rgb(0xF2862E) : rgb(0xE0402A)
         case "slime": return rgb(0x7BD35B)
+        case "bubblegum": return i % 2 == 0 ? rgb(0xFF8FC7) : rgb(0xFFB3D9)
+        case "ocean": return sin(t * 2 - Double(i) * 0.8) > 0 ? rgb(0x2E9CCA) : rgb(0x5FD4E8)
+        case "strawberry": return i % 3 == 0 ? rgb(0x5DBB63) : rgb(0xE5395B)
+        case "panda": return i % 2 == 0 ? rgb(0x2B2B2B) : rgb(0xF2F2F2)
+        case "lava": return sin(t * 5 + Double(i) * 1.3) > 0.3 ? rgb(0xFFB01F) : rgb(0xFF5A1F)
+        case "robot": return i % 2 == 0 ? rgb(0x90A4AE) : rgb(0x607D8B)
+        case "galaxy": return NSColor(hue: CGFloat(0.62 + 0.12 * sin(t * 0.8 + Double(i) * 0.5)), saturation: 0.6, brightness: 0.95, alpha: 1)
+        case "cookie": return rgb(0xC48A4E)
+        case "shadow": return rgb(0x3A2E5C)
         default: return claudeOrange
         }
     }
@@ -299,14 +308,71 @@ enum Renderer {
         case "ghost": return NSColor(white: 0.97, alpha: 0.9)
         case "devil": return rgb(0xC8302B)
         case "slime": return rgb(0x6CC24A, 0.95)
+        case "bubblegum": return rgb(0xFF9ECF)
+        case "ocean": return rgb(0x2E86C1)
+        case "strawberry": return rgb(0xE5395B)
+        case "panda": return rgb(0xF7F7F7)
+        case "lava": return rgb(0xD84315)
+        case "robot": return rgb(0xB0BEC5)
+        case "galaxy": return rgb(0x1B1440)
+        case "cookie": return rgb(0xD9A066)
+        case "shadow": return rgb(0x15121F)
         default: return rayColor(skin, 0, t)
         }
     }
 
-    static func faceInk(_ skin: String) -> NSColor { skin == "midnight" ? rgb(0xE8EEFF) : faceColor }
+    static func faceInk(_ skin: String) -> NSColor {
+        switch skin {
+        case "midnight", "galaxy": return rgb(0xE8EEFF)
+        case "shadow": return rgb(0xC9B6FF)
+        default: return faceColor
+        }
+    }
+
+    /// Patterns painted on the body (under the face).
+    private static func bodyDetail(_ skin: String, t: Double) {
+        switch skin {
+        case "strawberry":
+            rgb(0xFFE08A).setFill()
+            for (x, y) in [(-9.0, 8.0), (8.0, 9.0), (-11.0, -4.0), (11.0, -5.0), (-5.0, -11.0), (5.0, -12.0), (0.0, 12.0)] as [(CGFloat, CGFloat)] {
+                NSBezierPath(ovalIn: NSRect(x: x - 0.9, y: y - 1.3, width: 1.8, height: 2.6)).fill()
+            }
+        case "cookie":
+            rgb(0x5A3A24).setFill()
+            for (x, y) in [(-9.0, 7.0), (9.0, 8.0), (-10.0, -6.0), (10.0, -7.0), (0.0, -12.0), (-2.0, 11.0)] as [(CGFloat, CGFloat)] {
+                NSBezierPath(ovalIn: NSRect(x: x - 1.6, y: y - 1.4, width: 3.2, height: 2.8)).fill()
+            }
+        case "galaxy":
+            for k in 0..<9 {
+                let x = CGFloat((k * 37) % 26) - 13, y = CGFloat((k * 23) % 26) - 13
+                guard x * x + y * y < 170 else { continue }
+                NSColor(white: 1, alpha: 0.35 + 0.6 * CGFloat(abs(sin(t * 1.7 + Double(k))))).setFill()
+                NSBezierPath(ovalIn: NSRect(x: x, y: y, width: 1.6, height: 1.6)).fill()
+            }
+        case "panda":
+            rgb(0x2B2B2B).setFill()
+            for sx in [-1.0, 1.0] as [CGFloat] {
+                NSBezierPath(ovalIn: NSRect(x: sx * 5.8 - 4, y: -1.2, width: 8, height: 7.6)).fill()
+            }
+        case "robot":
+            rgb(0x78909C).setFill()
+            for (x, y) in [(-11.0, 6.0), (11.0, 6.0), (-11.0, -6.0), (11.0, -6.0)] as [(CGFloat, CGFloat)] {
+                NSBezierPath(ovalIn: NSRect(x: x - 1.3, y: y - 1.3, width: 2.6, height: 2.6)).fill()
+            }
+            rgb(0x00E5FF, 0.5 + 0.5 * CGFloat(abs(sin(t * 3)))).setFill()
+            NSBezierPath(ovalIn: NSRect(x: -1.5, y: 10.5, width: 3, height: 3)).fill()
+        case "lava":
+            rgb(0xFFB01F, 0.5 + 0.4 * CGFloat(abs(sin(t * 2)))).setStroke()
+            let crack = NSBezierPath(); crack.lineWidth = 1
+            crack.move(to: NSPoint(x: -12, y: -4)); crack.line(to: NSPoint(x: -7, y: -7)); crack.line(to: NSPoint(x: -4, y: -12))
+            crack.move(to: NSPoint(x: 12, y: 3)); crack.line(to: NSPoint(x: 8, y: -1)); crack.line(to: NSPoint(x: 10, y: -8))
+            crack.stroke()
+        default: break
+        }
+    }
 
     /// Draws a buddy whose resting body centre is `c`, at `s` times its natural size.
-    static func draw(skin: String, hat: String, pose p: Pose, at c: NSPoint, scale s: CGFloat, shadow: Bool = true) {
+    static func draw(skin: String, hat: String, accessory: String = "none-acc", pose p: Pose, at c: NSPoint, scale s: CGFloat, shadow: Bool = true) {
         let t = now()
         let skin = p.skinOverride ?? skin
         let hat = p.hatOverride ?? hat
@@ -339,6 +405,11 @@ enum Renderer {
         if skin == "midnight" {
             rgb(0x6E8EF0, 0.18 + 0.08 * CGFloat(sin(t * 2))).setFill()
             NSBezierPath(ovalIn: NSRect(x: -36, y: -36, width: 72, height: 72)).fill()
+        }
+        if skin == "shadow" || skin == "galaxy" || skin == "lava" {
+            let glow = skin == "shadow" ? 0x9C6BFF : skin == "galaxy" ? 0x7B5CFF : 0xFF7A1F
+            rgb(UInt32(glow), 0.16 + 0.08 * CGFloat(sin(t * 2.4))).setFill()
+            NSBezierPath(ovalIn: NSRect(x: -37, y: -37, width: 74, height: 74)).fill()
         }
         if skin == "devil" {
             rgb(0xFF5A1F, 0.22 + 0.1 * CGFloat(sin(t * 7))).setFill()
@@ -385,7 +456,9 @@ enum Renderer {
         squash.scaleX(by: p.sx, yBy: p.sy)
         NSGraphicsContext.saveGraphicsState()
         squash.concat()
-        face(p, ink: faceInk(skin))
+        bodyDetail(skin, t: t)
+        face(p, ink: faceInk(skin), eye: skin == "panda" ? .white : nil)
+        drawAccessory(accessory, t: t)
         drawHat(hat, t: t)
         NSGraphicsContext.restoreGraphicsState()
 
@@ -399,13 +472,15 @@ enum Renderer {
 
     // MARK: Face
 
-    private static func face(_ p: Pose, ink: NSColor) {
+    private static func face(_ p: Pose, ink: NSColor, eye: NSColor? = nil) {
         ink.setFill(); ink.setStroke()
         let lx = p.look.dx * 2.2, ly = p.look.dy * 1.6
         func eyes(w: CGFloat, h: CGFloat) {
+            (eye ?? ink).setFill()
             for sx in [-1.0, 1.0] as [CGFloat] {
                 NSBezierPath(ovalIn: NSRect(x: sx * 5.5 + lx - w / 2, y: 2.5 + ly - h / 2, width: w, height: h)).fill()
             }
+            ink.setFill()
         }
         func happyEyes() {
             for sx in [-1.0, 1.0] as [CGFloat] {
@@ -779,6 +854,156 @@ enum Renderer {
             let knot = NSBezierPath()
             knot.move(to: NSPoint(x: 15, y: 9)); knot.line(to: NSPoint(x: 24, y: 4 + CGFloat(sin(t * 5)) * 2)); knot.line(to: NSPoint(x: 22, y: 12)); knot.close()
             knot.fill()
+        case "bow":
+            rgb(0xFF5C8A).setFill()
+            for sx in [-1.0, 1.0] as [CGFloat] {
+                let wing = NSBezierPath()
+                wing.move(to: NSPoint(x: 8, y: 16))
+                wing.line(to: NSPoint(x: 8 + sx * 9, y: 22)); wing.line(to: NSPoint(x: 8 + sx * 9, y: 10)); wing.close()
+                wing.fill()
+            }
+            rgb(0xE0386B).setFill()
+            NSBezierPath(ovalIn: NSRect(x: 5, y: 13, width: 6, height: 6)).fill()
+        case "cowboy":
+            rgb(0x9C6B3E).setFill()
+            let brim = NSBezierPath()
+            brim.move(to: NSPoint(x: -24, y: 14))
+            brim.curve(to: NSPoint(x: 24, y: 14), controlPoint1: NSPoint(x: -10, y: 6), controlPoint2: NSPoint(x: 10, y: 6))
+            brim.curve(to: NSPoint(x: -24, y: 14), controlPoint1: NSPoint(x: 10, y: 11), controlPoint2: NSPoint(x: -10, y: 11))
+            brim.fill()
+            let crown = NSBezierPath()
+            crown.move(to: NSPoint(x: -11, y: 11)); crown.line(to: NSPoint(x: -10, y: 26))
+            crown.curve(to: NSPoint(x: 10, y: 26), controlPoint1: NSPoint(x: -4, y: 22), controlPoint2: NSPoint(x: 4, y: 22))
+            crown.line(to: NSPoint(x: 11, y: 11)); crown.close(); crown.fill()
+            rgb(0x5A3A24).setFill(); NSBezierPath(rect: NSRect(x: -11, y: 12, width: 22, height: 3)).fill()
+        case "grad":
+            rgb(0x222222).setFill()
+            NSBezierPath(roundedRect: NSRect(x: -10, y: 9, width: 20, height: 8), xRadius: 2, yRadius: 2).fill()
+            let board = NSBezierPath()
+            board.move(to: NSPoint(x: -20, y: 19)); board.line(to: NSPoint(x: 0, y: 25)); board.line(to: NSPoint(x: 20, y: 19)); board.line(to: NSPoint(x: 0, y: 13)); board.close()
+            board.fill()
+            sparkYellow.setStroke()
+            let tassel = NSBezierPath(); tassel.lineWidth = 1.4
+            tassel.move(to: NSPoint(x: 0, y: 19)); tassel.line(to: NSPoint(x: 14, y: 17)); tassel.line(to: NSPoint(x: 15 + CGFloat(sin(t * 3)), y: 8)); tassel.stroke()
+            sparkYellow.setFill(); NSBezierPath(ovalIn: NSRect(x: 13 + CGFloat(sin(t * 3)), y: 5, width: 4, height: 5)).fill()
+        case "flower":
+            let colors: [UInt32] = [0xFF6B9A, 0xFFD54F, 0x9C7BFF, 0x6EC6FF, 0xFF8A65]
+            rgb(0x5DBB63).setFill()
+            NSBezierPath(roundedRect: NSRect(x: -15, y: 9, width: 30, height: 4), xRadius: 2, yRadius: 2).fill()
+            for k in 0..<5 {
+                let x = -12 + CGFloat(k) * 6, y = 12 + (k % 2 == 0 ? 2 : 0) as CGFloat
+                rgb(colors[k]).setFill()
+                for a in 0..<5 {
+                    let ang = Double(a) / 5 * 2 * .pi
+                    NSBezierPath(ovalIn: NSRect(x: x + CGFloat(cos(ang)) * 2.4 - 1.8, y: y + CGFloat(sin(ang)) * 2.4 - 1.8, width: 3.6, height: 3.6)).fill()
+                }
+                rgb(0xFFF3C4).setFill(); NSBezierPath(ovalIn: NSRect(x: x - 1.2, y: y - 1.2, width: 2.4, height: 2.4)).fill()
+            }
+        case "santa":
+            let cap = NSBezierPath()
+            cap.move(to: NSPoint(x: -14, y: 11))
+            cap.curve(to: NSPoint(x: 20, y: 22), controlPoint1: NSPoint(x: -8, y: 34), controlPoint2: NSPoint(x: 12, y: 34))
+            cap.line(to: NSPoint(x: 14, y: 11)); cap.close()
+            rgb(0xD32F2F).setFill(); cap.fill()
+            NSColor.white.setFill()
+            NSBezierPath(roundedRect: NSRect(x: -16, y: 7, width: 32, height: 7), xRadius: 3.5, yRadius: 3.5).fill()
+            NSBezierPath(ovalIn: NSRect(x: 16, y: 17, width: 9, height: 9)).fill()
+        case "pirate":
+            rgb(0x222222).setFill()
+            let p = NSBezierPath()
+            p.move(to: NSPoint(x: -22, y: 12))
+            p.curve(to: NSPoint(x: 22, y: 12), controlPoint1: NSPoint(x: -12, y: 34), controlPoint2: NSPoint(x: 12, y: 34))
+            p.curve(to: NSPoint(x: -22, y: 12), controlPoint1: NSPoint(x: 8, y: 17), controlPoint2: NSPoint(x: -8, y: 17))
+            p.fill()
+            NSColor.white.setFill()
+            NSBezierPath(ovalIn: NSRect(x: -3, y: 19, width: 6, height: 5)).fill()
+            NSColor.white.setStroke()
+            let bones = NSBezierPath(); bones.lineWidth = 1.2
+            bones.move(to: NSPoint(x: -5, y: 16)); bones.line(to: NSPoint(x: 5, y: 20))
+            bones.move(to: NSPoint(x: 5, y: 16)); bones.line(to: NSPoint(x: -5, y: 20)); bones.stroke()
+        case "viking":
+            let dome = NSBezierPath()
+            dome.appendArc(withCenter: NSPoint(x: 0, y: 10), radius: 15, startAngle: 0, endAngle: 180)
+            dome.close()
+            rgb(0x9E9E9E).setFill(); dome.fill()
+            rgb(0x795548).setFill(); NSBezierPath(rect: NSRect(x: -15, y: 9, width: 30, height: 4)).fill()
+            rgb(0xFFF3E0).setFill()
+            for sx in [-1.0, 1.0] as [CGFloat] {
+                let h = NSBezierPath()
+                h.move(to: NSPoint(x: sx * 12, y: 16))
+                h.curve(to: NSPoint(x: sx * 24, y: 32), controlPoint1: NSPoint(x: sx * 20, y: 16), controlPoint2: NSPoint(x: sx * 24, y: 24))
+                h.curve(to: NSPoint(x: sx * 14, y: 21), controlPoint1: NSPoint(x: sx * 21, y: 25), controlPoint2: NSPoint(x: sx * 18, y: 21))
+                h.close(); h.fill()
+            }
+        case "halo":
+            let bob = CGFloat(sin(t * 2.2)) * 1.5
+            let glow = NSShadow(); glow.shadowColor = rgb(0xFFE57F); glow.shadowBlurRadius = 6
+            NSGraphicsContext.saveGraphicsState(); glow.set()
+            rgb(0xFFE57F).setStroke()
+            let ring = NSBezierPath(ovalIn: NSRect(x: -12, y: 26 + bob, width: 24, height: 6)); ring.lineWidth = 2.6; ring.stroke()
+            NSGraphicsContext.restoreGraphicsState()
+        default:
+            break
+        }
+    }
+
+    // MARK: Accessories (face coordinates)
+
+    static func drawAccessory(_ id: String, t: Double) {
+        switch id {
+        case "sunglasses":
+            rgb(0x111111).setFill()
+            for sx in [-1.0, 1.0] as [CGFloat] {
+                NSBezierPath(roundedRect: NSRect(x: sx * 5.8 - 4.4, y: 0, width: 8.8, height: 5.6), xRadius: 2.4, yRadius: 2.4).fill()
+            }
+            NSBezierPath(rect: NSRect(x: -2, y: 3.6, width: 4, height: 1.2)).fill()
+            NSColor(white: 1, alpha: 0.55).setFill()
+            for sx in [-1.0, 1.0] as [CGFloat] { NSBezierPath(rect: NSRect(x: sx * 5.8 - 2.6, y: 3.4, width: 2.2, height: 1)).fill() }
+        case "glasses":
+            rgb(0x3E2723).setStroke()
+            let g = NSBezierPath(); g.lineWidth = 1.3
+            for sx in [-1.0, 1.0] as [CGFloat] { g.appendOval(in: NSRect(x: sx * 5.8 - 4, y: -1.2, width: 8, height: 7.4)) }
+            g.move(to: NSPoint(x: -1.8, y: 3)); g.line(to: NSPoint(x: 1.8, y: 3))
+            g.stroke()
+        case "monocle":
+            rgb(0xC9A227).setStroke()
+            let m = NSBezierPath(ovalIn: NSRect(x: 1.6, y: -1.6, width: 8.4, height: 8.4)); m.lineWidth = 1.4; m.stroke()
+            let chain = NSBezierPath(); chain.lineWidth = 0.8
+            chain.move(to: NSPoint(x: 9.6, y: 0)); chain.curve(to: NSPoint(x: 12, y: -14), controlPoint1: NSPoint(x: 13, y: -4), controlPoint2: NSPoint(x: 10, y: -9))
+            chain.stroke()
+        case "mustache":
+            rgb(0x3E2723).setFill()
+            for sx in [-1.0, 1.0] as [CGFloat] {
+                let m = NSBezierPath()
+                m.move(to: NSPoint(x: 0, y: -2))
+                m.curve(to: NSPoint(x: sx * 8, y: -1.5), controlPoint1: NSPoint(x: sx * 3, y: -0.2), controlPoint2: NSPoint(x: sx * 6, y: -4.5))
+                m.curve(to: NSPoint(x: 0, y: -3.6), controlPoint1: NSPoint(x: sx * 5, y: -5), controlPoint2: NSPoint(x: sx * 2, y: -4.6))
+                m.close(); m.fill()
+            }
+        case "bowtie":
+            rgb(0xD32F2F).setFill()
+            for sx in [-1.0, 1.0] as [CGFloat] {
+                let w = NSBezierPath()
+                w.move(to: NSPoint(x: 0, y: -16.5)); w.line(to: NSPoint(x: sx * 8, y: -12.5)); w.line(to: NSPoint(x: sx * 8, y: -20.5)); w.close()
+                w.fill()
+            }
+            rgb(0xA52222).setFill(); NSBezierPath(ovalIn: NSRect(x: -2.4, y: -18.9, width: 4.8, height: 4.8)).fill()
+        case "scarf":
+            rgb(0x3F7FE0).setFill()
+            NSBezierPath(roundedRect: NSRect(x: -13, y: -15.5, width: 26, height: 6), xRadius: 3, yRadius: 3).fill()
+            let tail = NSBezierPath()
+            let sw = CGFloat(sin(t * 2.5)) * 1.5
+            tail.move(to: NSPoint(x: 6, y: -12)); tail.line(to: NSPoint(x: 11 + sw, y: -24)); tail.line(to: NSPoint(x: 15 + sw, y: -22)); tail.line(to: NSPoint(x: 11, y: -11)); tail.close()
+            tail.fill()
+            NSColor(white: 1, alpha: 0.7).setFill()
+            for x in [-8.0, -2.0, 4.0] as [CGFloat] { NSBezierPath(rect: NSRect(x: x, y: -15.5, width: 2, height: 6)).fill() }
+        case "medal":
+            rgb(0x3F7FE0).setFill()
+            let ribbon = NSBezierPath()
+            ribbon.move(to: NSPoint(x: -4, y: -10)); ribbon.line(to: NSPoint(x: 4, y: -10)); ribbon.line(to: NSPoint(x: 1.5, y: -17)); ribbon.line(to: NSPoint(x: -1.5, y: -17)); ribbon.close()
+            ribbon.fill()
+            rgb(0xF2C94C).setFill(); NSBezierPath(ovalIn: NSRect(x: -4.5, y: -24, width: 9, height: 9)).fill()
+            NSColor.white.setFill(); sparkle(at: NSPoint(x: 0, y: -19.5), size: 2.4 + CGFloat(abs(sin(t * 3))))
         default:
             break
         }
